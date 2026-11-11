@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { compareProgress, exerciseImage, fmtWeight, prSessionIds, relativeDay, sortByDateDesc, startOfWeek, topSet } from '../lib/utils'
 import { useStore, type HomeFilter } from '../store'
@@ -23,27 +23,11 @@ export function Home() {
   const unit = useStore((s) => s.unit)
   const addExercise = useStore((s) => s.addExercise)
 
-  const { query, filter, scrollY } = useStore((s) => s.home)
+  const { query, filter } = useStore((s) => s.home)
   const setHome = useStore((s) => s.setHome)
   const setQuery = (query: string) => setHome({ query })
   const setFilter = (filter: HomeFilter) => setHome({ filter })
   const [adding, setAdding] = useState(false)
-
-  // Restore the list position when coming back from an exercise page, and keep
-  // remembering it while the user scrolls.
-  useEffect(() => {
-    const y = scrollY
-    const raf = requestAnimationFrame(() => window.scrollTo({ top: y }))
-    let ticking = false
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => { setHome({ scrollY: window.scrollY }); ticking = false })
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', onScroll) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const byExercise = useMemo(() => {
     const map = new Map<string, Session[]>()

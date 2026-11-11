@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { ExerciseDetail } from './components/ExerciseDetail'
 import { Home } from './components/Home'
+import { PageOverlay } from './components/PageOverlay'
 import { Settings } from './components/Settings'
 import { useRoute } from './lib/router'
 
@@ -18,17 +19,22 @@ export default function App() {
 
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
 
-  useEffect(() => {
-    // Scroll to top when opening a detail/settings page. The home screen restores
-    // its own list position so filters and scroll survive a round trip.
-    if (route.name !== 'home') window.scrollTo({ top: 0 })
-  }, [route])
-
   return (
-    <div className="app">
-      {route.name === 'home' && <Home />}
-      {route.name === 'exercise' && <ExerciseDetail key={route.id} id={route.id} toast={toast} />}
-      {route.name === 'settings' && <Settings toast={toast} />}
+    <>
+      {/* The home screen is always mounted; detail pages open as a layer above it. */}
+      <div className="app" aria-hidden={route.name !== 'home'}>
+        <Home />
+      </div>
+      {route.name === 'exercise' && (
+        <PageOverlay key={route.id}>
+          <ExerciseDetail id={route.id} toast={toast} />
+        </PageOverlay>
+      )}
+      {route.name === 'settings' && (
+        <PageOverlay key="settings">
+          <Settings toast={toast} />
+        </PageOverlay>
+      )}
 
       {toastMsg && <div className="toast" role="status">{toastMsg}</div>}
       {needRefresh && (
@@ -37,6 +43,6 @@ export default function App() {
           <button className="btn primary" onClick={() => void updateServiceWorker(true)}>Reload</button>
         </div>
       )}
-    </div>
+    </>
   )
 }
