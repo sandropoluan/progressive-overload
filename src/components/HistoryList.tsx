@@ -7,9 +7,11 @@ interface Props {
   unit: Unit
   onEdit: (s: Session) => void
   onDelete: (s: Session) => void
+  /** Session id to flash as "just added". */
+  highlightId?: string | null
 }
 
-export function HistoryList({ sessions, unit, onEdit, onDelete }: Props) {
+export function HistoryList({ sessions, unit, onEdit, onDelete, highlightId }: Props) {
   if (sessions.length === 0) {
     return (
       <div className="empty">
@@ -24,7 +26,7 @@ export function HistoryList({ sessions, unit, onEdit, onDelete }: Props) {
   return (
     <div className="hist">
       {sorted.map((s) => (
-        <div className="hist-row" key={s.id}>
+        <div className={`hist-row ${s.id === highlightId ? 'new' : ''}`} key={s.id}>
           <div className="date">
             <div className="d1">{relativeDay(s.date)}</div>
             <div className="d2 num">{new Date(s.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>

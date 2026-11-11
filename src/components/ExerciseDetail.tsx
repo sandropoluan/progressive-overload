@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { bestE1RM, fmtWeight, relativeDay, sessionVolume, sortByDateDesc, suggestNext, topSet } from '../lib/utils'
 import { useStore } from '../store'
@@ -24,6 +24,11 @@ export function ExerciseDetail({ id, toast }: Props) {
   const [editingSession, setEditingSession] = useState<Session | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Session | 'exercise' | null>(null)
   const [saveKey, setSaveKey] = useState(0)
+  const [justSaved, setJustSaved] = useState(false)
+  const [newSessionId, setNewSessionId] = useState<string | null>(null)
+  const historyRef = useRef<HTMLDivElement>(null)
+  const timers = useRef<number[]>([])
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), [])
 
   const sessions = useMemo(() => allSessions.filter((s) => s.exerciseId === id).sort(sortByDateDesc), [allSessions, id])
   const last = sessions[0]
@@ -92,18 +97,29 @@ export function ExerciseDetail({ id, toast }: Props) {
         unit={unit}
         suggestion={suggestion}
         initialSets={initialSets}
+        saved={justSaved}
         onSave={(sets, note) => {
-          addSession(id, sets, undefined, note)
-          setSaveKey((k) => k + 1)
+          if (justSaved) return
+          const session = addSession(id, sets, undefined, note)
+          setJustSaved(true)
+          setNewSessionId(session.id)
           toast('Session saved')
-          window.scrollTo({ top: 0, behavior: 'smooth' })
+          // Bring the new entry into view, then unlock the form pre-filled with this session.
+          timers.current.push(window.setTimeout(() => {
+            historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 250))
+          timers.current.push(window.setTimeout(() => {
+            setSaveKey((k) => k + 1)
+            setJustSaved(false)
+          }, 1400))
+          timers.current.push(window.setTimeout(() => setNewSessionId(null), 3000))
         }}
       />
 
-      <div className="section-title">History</div>
+      <div className="section-title" ref={historyRef} style={{ scrollMarginTop: 72 }}>History</div>
       <ProgressChart sessions={sessions} unit={unit} />
       <div style={{ height: 12 }} />
-      <HistoryList sessions={sessions} unit={unit} onEdit={setEditingSession} onDelete={setConfirmDelete} />
+      <HistoryList sessions={sessions} unit={unit} onEdit={setEditingSession} onDelete={setConfirmDelete} highlightId={newSessionId} />
 
       <ExerciseForm
         open={editing}

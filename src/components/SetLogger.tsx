@@ -11,6 +11,8 @@ interface Props {
   saveLabel?: string
   onCancel?: () => void
   initialNote?: string
+  /** When true the save button shows a "Saved" state and stays locked (prevents double taps). */
+  saved?: boolean
 }
 
 interface Draft { weight: string; reps: string }
@@ -21,7 +23,7 @@ const toDraft = (sets: SetEntry[]): Draft[] =>
 const parse = (d: Draft[]): SetEntry[] =>
   d.map((s) => ({ weight: parseFloat(s.weight.replace(',', '.')) || 0, reps: parseInt(s.reps, 10) || 0 })).filter((s) => s.reps > 0)
 
-export function SetLogger({ unit, suggestion, initialSets, onSave, saveLabel = 'Save session', onCancel, initialNote = '' }: Props) {
+export function SetLogger({ unit, suggestion, initialSets, onSave, saveLabel = 'Save session', onCancel, initialNote = '', saved = false }: Props) {
   const [sets, setSets] = useState<Draft[]>(() => toDraft(initialSets))
   const [note, setNote] = useState(initialNote)
   const [applied, setApplied] = useState(false)
@@ -105,8 +107,14 @@ export function SetLogger({ unit, suggestion, initialSets, onSave, saveLabel = '
 
       <div className="logger-actions">
         {onCancel && <button type="button" className="btn" onClick={onCancel}>Cancel</button>}
-        <button type="button" className="btn primary block lg" disabled={!valid} onClick={() => onSave(parsed, note)}>
-          <Check /> {saveLabel}
+        <button
+          type="button"
+          className={`btn primary block lg save-btn ${saved ? 'saved' : ''}`}
+          disabled={!valid || saved}
+          aria-live="polite"
+          onClick={() => { if (!saved) onSave(parsed, note) }}
+        >
+          <Check /> {saved ? 'Saved' : saveLabel}
         </button>
       </div>
     </div>
