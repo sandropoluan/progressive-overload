@@ -30,8 +30,10 @@ export interface Exercise {
   custom: boolean
   /** True when illustrations exist at public/exercises/<id>/{start,end}.webp */
   image?: boolean
-  /** True when the illustration is a single held pose (plank, carries). */
+  /** True when the illustration is a single frame (held poses, or where only one correct frame exists). */
   single?: boolean
+  /** Caption for a single-frame illustration; defaults to "Hold". */
+  caption?: string
   /** True when the render is a wide 3:1 image (lying exercises); shown stacked instead of side by side. */
   wide?: boolean
   /** Target muscles, as react-body-highlighter slugs. */

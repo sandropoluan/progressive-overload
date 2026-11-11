@@ -7,7 +7,7 @@
  *
  * Usage:  node scripts/build-exercises.mjs [--skip-images]
  */
-import { mkdir, writeFile, access } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, access } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
@@ -299,6 +299,10 @@ const MUSCLE_OVERRIDES = {
 const FRAME_OVERRIDES = {
   'hip-abduction': ['start'],
 }
+// Caption shown on a single-frame illustration (defaults to "Hold").
+const CAPTIONS = {
+  'hip-abduction': 'Start · push the pads outward',
+}
 
 const fetchJson = async (url) => (await fetch(url)).json()
 const ts = (v) => JSON.stringify(v)
@@ -325,6 +329,7 @@ async function main() {
     const secondary = (MUSCLE_OVERRIDES[id]?.secondary ?? toSlugs(e.muscles.secondary)).filter((m) => !primary.includes(m))
     return { id, name, muscle, equipment, repMin, repMax, sets, custom: false, image: true,
       ...((FRAME_OVERRIDES[id] ?? e.frames).length === 1 ? { single: true } : {}),
+      ...(CAPTIONS[id] ? { caption: CAPTIONS[id] } : {}),
       ...(e.width / e.height > WIDE_RATIO ? { wide: true } : {}),
       primary, secondary }
   })
@@ -343,6 +348,8 @@ async function main() {
   if (skipImages) return
 
   const outRoot = join(ROOT, 'public/exercises')
+  const manifestPath = join(ROOT, 'scripts/image-sources.json')
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8').catch(() => '{}'))
   const jobs = []
   for (const [id, , , , , , , oid] of C) {
     const e = illu.get(oid)
@@ -352,15 +359,19 @@ async function main() {
     const pick = { start: keys[0], end: keys[keys.length - 1] }
     for (const frame of ['start', 'end']) {
       const out = join(outRoot, id, `${frame}.webp`)
-      jobs.push({ url: OEI + e.images[pick[frame]], out, height })
+      // The manifest records which dataset image each cached file came from, so a
+      // changed mapping re-downloads instead of silently reusing the old render.
+      jobs.push({ url: OEI + e.images[pick[frame]], out, height, src: e.images[pick[frame]] })
     }
   }
   let done = 0; const errors = []
   const worker = async () => {
     while (jobs.length) {
-      const { url, out, height } = jobs.shift()
+      const { url, out, height, src } = jobs.shift()
+      const rel = out.slice(outRoot.length + 1)
       try {
-        await access(out); done++; continue
+        await access(out)
+        if (manifest[rel] === src) { done++; continue }
       } catch { /* not cached */ }
       try {
         const res = await fetch(url)
@@ -368,11 +379,13 @@ async function main() {
         const buf = Buffer.from(await res.arrayBuffer())
         await mkdir(dirname(out), { recursive: true })
         await sharp(buf).resize({ height }).webp({ quality: WEBP_QUALITY, effort: 6 }).toFile(out)
+        manifest[rel] = src
         done++
       } catch (err) { errors.push(`${url}: ${err.message}`) }
     }
   }
   await Promise.all(Array.from({ length: 8 }, worker))
+  await writeFile(manifestPath, JSON.stringify(Object.fromEntries(Object.entries(manifest).sort()), null, 1) + '\n')
   console.log(`images: ${done} ok, ${errors.length} errors`)
   errors.forEach((e) => console.log('  ' + e))
   if (errors.length) process.exitCode = 1

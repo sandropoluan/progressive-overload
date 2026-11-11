@@ -29,7 +29,7 @@ export function HowTo({ exercise, defaultOpen = false }: Props) {
               {frames.map((f) => (
                 <button type="button" key={f} className="frame" onClick={() => setZoom(f)} aria-label={f === 'start' ? 'Start position' : 'End position'}>
                   <img src={exerciseImage(exercise.id, f)} alt={`${exercise.name} – ${f} position`} loading="lazy" onError={() => setImgFailed(true)} />
-                  <span className="cap">{exercise.single ? 'Hold' : f}</span>
+                  <span className="cap">{exercise.single ? (exercise.caption ?? 'Hold') : f}</span>
                 </button>
               ))}
             </div>
