@@ -106,7 +106,7 @@ export function Home() {
       <div className="stats">
         <StatTile label="Training days" value={String(daysThisWeek)} unit="this week" delta={daysThisWeek - daysLastWeek} deltaUnit="vs last" />
         <StatTile label="Sessions" value={String(sessions.length)} unit="total" />
-        <StatTile label="PRs this week" value={String(prsThisWeek)} />
+        <StatTile label="Weekly PRs" value={String(prsThisWeek)} />
       </div>
 
       <div style={{ height: 12 }} />
