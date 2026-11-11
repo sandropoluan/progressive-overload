@@ -2,14 +2,14 @@ import { useMemo, useRef, useState } from 'react'
 import { fmtWeight, sessionVolume, startOfWeek } from '../lib/utils'
 import type { Session, Unit } from '../types'
 
-type Metric = 'volume' | 'sets'
+type Metric = 'volume' | 'sets' | 'reps'
 const WEEKS = 12
 const DAY_MS = 86_400_000
 const W = 520
 const H = 150
 const PAD = { top: 10, right: 8, bottom: 22, left: 8 }
 
-interface Week { start: Date; volume: number; sets: number; sessions: number; days: number[] }
+interface Week { start: Date; volume: number; sets: number; reps: number; sessions: number; days: number[] }
 
 const fmtK = (v: number) => (v >= 10_000 ? `${(v / 1000).toFixed(0)}k` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : fmtWeight(v))
 const weekLabel = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -26,7 +26,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
     const list: Week[] = Array.from({ length: WEEKS }, (_, i) => {
       const start = new Date(thisWeek)
       start.setDate(thisWeek.getDate() - (WEEKS - 1 - i) * 7)
-      return { start, volume: 0, sets: 0, sessions: 0, days: [0, 0, 0, 0, 0, 0, 0] }
+      return { start, volume: 0, sets: 0, reps: 0, sessions: 0, days: [0, 0, 0, 0, 0, 0, 0] }
     })
     const first = list[0].start.getTime()
     for (const s of sessions) {
@@ -38,15 +38,17 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
       const vol = sessionVolume(s.sets)
       w.volume += vol
       w.sets += s.sets.length
+      w.reps += s.sets.reduce((n, x) => n + x.reps, 0)
       w.sessions += 1
+      // Heatmap intensity counts sets, so bodyweight days light up too.
       const day = (new Date(s.date).getDay() + 6) % 7
-      w.days[day] += vol
+      w.days[day] += s.sets.length
     }
     return list
   }, [sessions, now])
 
   const hasData = weeks.some((w) => w.sessions > 0)
-  const values = weeks.map((w) => (metric === 'volume' ? w.volume : w.sets))
+  const values = weeks.map((w) => (metric === 'volume' ? w.volume : metric === 'sets' ? w.sets : w.reps))
   const max = Math.max(...values, 1)
   const innerW = W - PAD.left - PAD.right
   const innerH = H - PAD.top - PAD.bottom
@@ -59,7 +61,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
   const aw = weeks[active]
   const prev = weeks[active - 1]
   const aVal = values[active]
-  const pVal = prev ? (metric === 'volume' ? prev.volume : prev.sets) : undefined
+  const pVal = prev ? (metric === 'volume' ? prev.volume : metric === 'sets' ? prev.sets : prev.reps) : undefined
   const delta = pVal !== undefined && pVal > 0 ? ((aVal - pVal) / pVal) * 100 : undefined
 
   const onMove = (clientX: number) => {
@@ -87,9 +89,9 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
       <div className="section-title" style={{ marginTop: 0 }}>
         <span>Last {WEEKS} weeks</span>
         <div className="chart-tabs">
-          {(['volume', 'sets'] as Metric[]).map((m) => (
+          {(['volume', 'sets', 'reps'] as Metric[]).map((m) => (
             <button key={m} className={m === metric ? 'active' : ''} onClick={() => setMetric(m)}>
-              {m === 'volume' ? 'Volume' : 'Sets'}
+              {m === 'volume' ? 'Volume' : m === 'sets' ? 'Sets' : 'Reps'}
             </button>
           ))}
         </div>
@@ -99,7 +101,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
         <div>
           <div className="overview-value num">
             {hasData ? fmtK(aVal) : '—'}
-            <small>{metric === 'volume' ? unit : 'sets'}</small>
+            <small>{metric === 'volume' ? unit : metric}</small>
           </div>
           <div className="overview-sub">
             {hover === null ? 'This week' : `Week of ${weekLabel(aw.start)}`} · {aw.sessions} session{aw.sessions === 1 ? '' : 's'}
@@ -172,7 +174,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
                   <span
                     key={di}
                     className={`heat-cell l${level(v)} ${isToday ? 'today' : ''} ${future ? 'future' : ''}`}
-                    title={`${new Date(w.start.getTime() + di * DAY_MS).toLocaleDateString()}${v ? ` · ${fmtWeight(v)} ${unit}` : ''}`}
+                    title={`${new Date(w.start.getTime() + di * DAY_MS).toLocaleDateString()}${v ? ` · ${v} sets` : ''}`}
                   />
                 )
               })}

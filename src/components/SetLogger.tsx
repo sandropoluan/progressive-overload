@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fmtWeight, sessionVolume, weightStep, type Suggestion } from '../lib/utils'
+import { fmtWeight, sessionVolume, totalReps, weightStep, type Suggestion } from '../lib/utils'
 import type { SetEntry, Unit } from '../types'
 import { Check, Plus, Sparkle, Trash } from './Icons'
 
@@ -102,7 +102,7 @@ export function SetLogger({ unit, suggestion, initialSets, onSave, saveLabel = '
 
       <div className="logger-summary num">
         <span>{parsed.length} set{parsed.length === 1 ? '' : 's'}</span>
-        <span>Volume <b>{fmtWeight(volume)} {unit}</b></span>
+        <span>{volume > 0 ? <>Volume <b>{fmtWeight(volume)} {unit}</b></> : <>Total <b>{totalReps(parsed)} reps</b></>}</span>
       </div>
 
       <div className="logger-actions">

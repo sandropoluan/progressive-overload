@@ -24,6 +24,13 @@ export const topSet = (sets: SetEntry[]): SetEntry | undefined =>
 export const bestE1RM = (sets: SetEntry[]): number =>
   sets.reduce((m, s) => Math.max(m, estimate1RM(s.weight, s.reps)), 0)
 
+export const totalReps = (sets: SetEntry[]): number => sets.reduce((sum, s) => sum + s.reps, 0)
+
+export const bestReps = (sets: SetEntry[]): number => sets.reduce((m, s) => Math.max(m, s.reps), 0)
+
+/** True when no set in the list carries external load (pure bodyweight / timed work). */
+export const isUnweighted = (sets: SetEntry[]): boolean => sets.length > 0 && sets.every((s) => s.weight <= 0)
+
 export const fmtWeight = (w: number): string =>
   Number.isInteger(w) ? String(w) : w.toFixed(1).replace(/\.0$/, '')
 
@@ -31,9 +38,10 @@ export const fmtSets = (sets: SetEntry[], unit: Unit): string => {
   if (sets.length === 0) return '—'
   const allSame = sets.every((s) => s.weight === sets[0].weight)
   if (allSame) {
-    return `${fmtWeight(sets[0].weight)} ${unit} × ${sets.map((s) => s.reps).join(', ')}`
+    const load = sets[0].weight > 0 ? `${fmtWeight(sets[0].weight)} ${unit}` : 'BW'
+    return `${load} × ${sets.map((s) => s.reps).join(', ')}`
   }
-  return sets.map((s) => `${fmtWeight(s.weight)}×${s.reps}`).join('  ')
+  return sets.map((s) => `${s.weight > 0 ? fmtWeight(s.weight) : 'BW'}×${s.reps}`).join('  ')
 }
 
 export const sortByDateDesc = (a: Session, b: Session): number =>
@@ -161,12 +169,13 @@ export const compareProgress = (a: SetEntry[], b: SetEntry[]): number => {
 export const prSessionIds = (sessions: Session[]): Set<string> => {
   const asc = [...sessions].sort(sortByDateAsc)
   const ids = new Set<string>()
-  let bestW = -1; let bestE = -1
+  let bestW = -1; let bestE = -1; let bestR0 = -1
   asc.forEach((s, i) => {
     const w = topSet(s.sets)?.weight ?? 0
     const e = bestE1RM(s.sets)
-    if (i > 0 && (w > bestW || e > bestE + 0.01)) ids.add(s.id)
-    bestW = Math.max(bestW, w); bestE = Math.max(bestE, e)
+    const r0 = isUnweighted(s.sets) ? bestReps(s.sets) : -1 // bodyweight sessions compete on reps
+    if (i > 0 && (w > bestW || (w > 0 && e > bestE + 0.01) || (r0 >= 0 && r0 > bestR0))) ids.add(s.id)
+    bestW = Math.max(bestW, w); bestE = Math.max(bestE, e); bestR0 = Math.max(bestR0, r0)
   })
   return ids
 }

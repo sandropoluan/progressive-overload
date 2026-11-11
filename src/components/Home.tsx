@@ -158,7 +158,7 @@ function ExerciseRow({ exercise, sessions, unit }: { exercise: Exercise; session
       {lastTop ? (
         <div className="last">
           <div className="w num">
-            {fmtWeight(lastTop.weight)}<small>{unit}</small> × {lastTop.reps}
+            {lastTop.weight > 0 ? <>{fmtWeight(lastTop.weight)}<small>{unit}</small> × {lastTop.reps}</> : <>{lastTop.reps}<small>{exercise.timed ? 's' : 'reps'}</small></>}
             {trend && (
               <span className={`trend ${trend}`} style={{ marginLeft: 6 }}>
                 {trend === 'up' ? <ArrowUp /> : trend === 'down' ? <ArrowDown /> : <Dash />}

@@ -1,4 +1,4 @@
-import { fmtSets, fmtWeight, prSessionIds, relativeDay, sessionVolume, sortByDateDesc } from '../lib/utils'
+import { fmtSets, fmtWeight, isUnweighted, prSessionIds, relativeDay, sessionVolume, sortByDateDesc, totalReps } from '../lib/utils'
 import type { Session, Unit } from '../types'
 import { Edit, Trash, Trophy } from './Icons'
 
@@ -36,7 +36,7 @@ export function HistoryList({ sessions, unit, onEdit, onDelete, highlightId }: P
               {fmtSets(s.sets, unit)}
               {prIds.has(s.id) && <span className="pr-tag"><Trophy /> PR</span>}
             </div>
-            <div className="vol num">{s.sets.length} sets · {fmtWeight(sessionVolume(s.sets))} {unit}</div>
+            <div className="vol num">{s.sets.length} sets · {isUnweighted(s.sets) ? `${totalReps(s.sets)} reps` : `${fmtWeight(sessionVolume(s.sets))} ${unit}`}</div>
             {s.note && <div className="note">{s.note}</div>}
           </div>
           <div className="hist-actions">

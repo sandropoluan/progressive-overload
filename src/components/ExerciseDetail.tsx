@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
-import { bestE1RM, fmtWeight, relativeDay, sessionVolume, sortByDateDesc, suggestNext, topSet } from '../lib/utils'
+import { bestE1RM, bestReps, fmtWeight, isUnweighted, relativeDay, sessionVolume, sortByDateDesc, suggestNext, topSet, totalReps } from '../lib/utils'
 import { useStore } from '../store'
 import type { Session } from '../types'
 import { ExerciseForm } from './ExerciseForm'
@@ -58,6 +58,12 @@ export function ExerciseDetail({ id, toast }: Props) {
   const prevTop = prev ? topSet(prev.sets) : undefined
   const lastVol = last ? sessionVolume(last.sets) : 0
   const prevVol = prev ? sessionVolume(prev.sets) : undefined
+  // Bodyweight history: show reps instead of load.
+  const unweighted = sessions.length > 0 && sessions.every((s) => isUnweighted(s.sets))
+  const repWord = exercise?.timed ? 's' : 'reps'
+  const bestR = sessions.reduce((m, s) => Math.max(m, bestReps(s.sets)), 0)
+  const lastTotal = last ? totalReps(last.sets) : 0
+  const prevTotal = prev ? totalReps(prev.sets) : undefined
 
   return (
     <>
@@ -86,19 +92,46 @@ export function ExerciseDetail({ id, toast }: Props) {
       <div style={{ height: 12 }} />
 
       <div className="stats">
-        <StatTile
-          label="Last top set"
-          value={lastTop ? `${fmtWeight(lastTop.weight)}×${lastTop.reps}` : '—'}
-          delta={lastTop && prevTop ? lastTop.weight - prevTop.weight : undefined}
-          deltaUnit={unit}
-        />
-        <StatTile label="Best weight" value={bestWeight ? fmtWeight(bestWeight) : '—'} unit={bestWeight ? unit : undefined} />
-        <StatTile label="Est. 1RM" value={bestE1 ? fmtWeight(Math.round(bestE1 * 2) / 2) : '—'} unit={bestE1 ? unit : undefined} />
+        {unweighted ? (
+          <>
+            <StatTile
+              label="Last best set"
+              value={lastTop ? String(lastTop.reps) : '—'}
+              unit={lastTop ? repWord : undefined}
+              delta={lastTop && prevTop ? lastTop.reps - prevTop.reps : undefined}
+              deltaUnit={repWord}
+            />
+            <StatTile label={`Best ${repWord}`} value={bestR ? String(bestR) : '—'} unit={bestR ? 'in a set' : undefined} />
+            <StatTile
+              label={`Total ${repWord}`}
+              value={last ? String(lastTotal) : '—'}
+              unit={last ? 'last session' : undefined}
+              delta={prevTotal !== undefined ? lastTotal - prevTotal : undefined}
+            />
+          </>
+        ) : (
+          <>
+            <StatTile
+              label="Last top set"
+              value={lastTop ? `${lastTop.weight > 0 ? fmtWeight(lastTop.weight) : 'BW'}×${lastTop.reps}` : '—'}
+              delta={lastTop && prevTop ? lastTop.weight - prevTop.weight : undefined}
+              deltaUnit={unit}
+            />
+            <StatTile label="Best weight" value={bestWeight ? fmtWeight(bestWeight) : '—'} unit={bestWeight ? unit : undefined} />
+            <StatTile label="Est. 1RM" value={bestE1 ? fmtWeight(Math.round(bestE1 * 2) / 2) : '—'} unit={bestE1 ? unit : undefined} />
+          </>
+        )}
       </div>
 
       <div className="section-title">
         <span>Log today</span>
-        {last && <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>Last: {relativeDay(last.date)} · {fmtWeight(lastVol)} {unit}{prevVol !== undefined && ` (${lastVol - prevVol >= 0 ? '+' : ''}${fmtWeight(lastVol - prevVol)})`}</span>}
+        {last && (
+          <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>
+            Last: {relativeDay(last.date)} · {unweighted
+              ? `${lastTotal} ${repWord}${prevTotal !== undefined ? ` (${lastTotal - prevTotal >= 0 ? '+' : ''}${lastTotal - prevTotal})` : ''}`
+              : `${fmtWeight(lastVol)} ${unit}${prevVol !== undefined ? ` (${lastVol - prevVol >= 0 ? '+' : ''}${fmtWeight(lastVol - prevVol)})` : ''}`}
+          </span>
+        )}
       </div>
       <SetLogger
         key={`${id}-${saveKey}`}

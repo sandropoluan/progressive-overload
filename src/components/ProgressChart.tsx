@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
-import { bestE1RM, fmtWeight, sessionVolume, shortDate, sortByDateAsc, topSet } from '../lib/utils'
+import { bestE1RM, bestReps, fmtWeight, isUnweighted, sessionVolume, shortDate, sortByDateAsc, topSet, totalReps } from '../lib/utils'
 import type { Session, Unit } from '../types'
 
-type Metric = 'top' | 'e1rm' | 'volume'
+type Metric = 'top' | 'e1rm' | 'volume' | 'reps' | 'total'
 
 interface Props {
   sessions: Session[]
@@ -13,19 +13,28 @@ const W = 520
 const H = 200
 const PAD = { top: 18, right: 16, bottom: 28, left: 40 }
 
-const metricLabel: Record<Metric, string> = { top: 'Top set', e1rm: 'Est. 1RM', volume: 'Volume' }
+const metricLabel: Record<Metric, string> = { top: 'Top set', e1rm: 'Est. 1RM', volume: 'Volume', reps: 'Best reps', total: 'Total reps' }
 
 export function ProgressChart({ sessions, unit }: Props) {
-  const [metric, setMetric] = useState<Metric>('top')
+  // Bodyweight-only history is charted by reps; weighted history by load.
+  const unweighted = sessions.length > 0 && sessions.every((s) => isUnweighted(s.sets))
+  const metrics: Metric[] = unweighted ? ['reps', 'total'] : ['top', 'e1rm', 'volume', 'reps']
+  const [chosen, setMetric] = useState<Metric | null>(null)
+  const metric: Metric = chosen && metrics.includes(chosen) ? chosen : metrics[0]
   const [hover, setHover] = useState<number | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const valueUnit = metric === 'reps' || metric === 'total' ? 'reps' : unit
 
   const points = useMemo(() => {
     const sorted = [...sessions].sort(sortByDateAsc)
     return sorted.map((s) => {
       const t = topSet(s.sets)
       const value =
-        metric === 'top' ? (t?.weight ?? 0) : metric === 'e1rm' ? bestE1RM(s.sets) : sessionVolume(s.sets)
+        metric === 'top' ? (t?.weight ?? 0)
+        : metric === 'e1rm' ? bestE1RM(s.sets)
+        : metric === 'volume' ? sessionVolume(s.sets)
+        : metric === 'reps' ? bestReps(s.sets)
+        : totalReps(s.sets)
       return { date: s.date, value, reps: t?.reps ?? 0, weight: t?.weight ?? 0 }
     })
   }, [sessions, metric])
@@ -87,7 +96,7 @@ export function ProgressChart({ sessions, unit }: Props) {
       <div className="section-title" style={{ marginTop: 0 }}>
         <span>Progress</span>
         <div className="chart-tabs">
-          {(Object.keys(metricLabel) as Metric[]).map((m) => (
+          {metrics.map((m) => (
             <button key={m} className={m === metric ? 'active' : ''} onClick={() => setMetric(m)}>
               {metricLabel[m]}
             </button>
@@ -96,7 +105,7 @@ export function ProgressChart({ sessions, unit }: Props) {
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
         <span className="num" style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em' }}>
-          {fmt(active.value)} <small style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 600 }}>{unit}</small>
+          {fmt(active.value)} <small style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 600 }}>{valueUnit}</small>
         </span>
         <span className={`trend num ${change > 0 ? 'up' : change < 0 ? 'down' : 'flat'}`} style={{ fontSize: 12.5 }}>
           {change > 0 ? '+' : ''}{fmt(change)} ({pct > 0 ? '+' : ''}{pct.toFixed(0)}%) since first
@@ -155,7 +164,7 @@ export function ProgressChart({ sessions, unit }: Props) {
               top: Math.max(0, (y(points[hover].value) / H) * 100 - 30) + '%',
             }}
           >
-            <b className="num">{fmt(points[hover].value)} {unit}{metric !== 'volume' && ` · ${fmtWeight(points[hover].weight)}×${points[hover].reps}`}</b>
+            <b className="num">{fmt(points[hover].value)} {valueUnit}{metric !== 'volume' && metric !== 'total' && ` · ${points[hover].weight > 0 ? fmtWeight(points[hover].weight) : 'BW'}×${points[hover].reps}`}</b>
             <span>{new Date(points[hover].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         )}
