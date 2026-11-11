@@ -34,7 +34,9 @@ export function ExerciseDetail({ id, toast }: Props) {
   const last = sessions[0]
   const prev = sessions[1]
 
-  const range = exercise ? { repMin: exercise.repMin, repMax: exercise.repMax, sets: exercise.sets } : { repMin: 8, repMax: 12, sets: 3 }
+  const range = exercise
+    ? { repMin: exercise.repMin, repMax: exercise.repMax, sets: exercise.sets, equipment: exercise.equipment, timed: exercise.timed, unilateral: exercise.unilateral }
+    : { repMin: 8, repMax: 12, sets: 3, equipment: 'Machine' as const }
   const suggestion = suggestNext(last, unit, range)
   const initialSets = last ? last.sets.map((s) => ({ ...s })) : suggestion.sets
 
@@ -70,8 +72,14 @@ export function ExerciseDetail({ id, toast }: Props) {
       </header>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <span className="rec num"><Target /> Target {exercise.sets} × {exercise.repMin}–{exercise.repMax} reps</span>
-        <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Add weight once every set hits {exercise.repMax}.</span>
+        <span className="rec num"><Target /> Target {exercise.sets} × {exercise.repMin}–{exercise.repMax} {exercise.timed ? 's' : 'reps'}{exercise.unilateral ? ' per side' : ''}</span>
+        <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+          {exercise.timed
+            ? `Hold longer each week; add weight once every set reaches ${exercise.repMax} s.`
+            : exercise.equipment === 'Bodyweight'
+              ? `Add reps; once every set hits ${exercise.repMax}, add a belt or vest and start over at ${exercise.repMin}.`
+              : `Add weight once every set hits ${exercise.repMax}.`}
+        </span>
       </div>
 
       <HowTo exercise={exercise} defaultOpen={sessions.length === 0} />

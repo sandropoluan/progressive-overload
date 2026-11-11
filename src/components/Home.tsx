@@ -185,8 +185,8 @@ function ExerciseRow({ exercise, sessions, unit }: { exercise: Exercise; session
         </div>
       ) : (
         <div className="last">
-          <div className="w num" style={{ color: 'var(--text-2)' }}>{exercise.sets} × {exercise.repMin}–{exercise.repMax}</div>
-          <div className="d">target</div>
+          <div className="w num" style={{ color: 'var(--text-2)' }}>{exercise.sets} × {exercise.repMin}–{exercise.repMax}{exercise.timed ? ' s' : ''}</div>
+          <div className="d">{exercise.unilateral ? 'per side' : 'target'}</div>
         </div>
       )}
       <ChevronRight className="chev" />

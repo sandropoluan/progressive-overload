@@ -36,6 +36,10 @@ export interface Exercise {
   caption?: string
   /** True when the render is a wide 3:1 image (lying exercises); shown stacked instead of side by side. */
   wide?: boolean
+  /** Reps are counted per side (one arm / one leg at a time). */
+  unilateral?: boolean
+  /** "Reps" are seconds (planks, carries). */
+  timed?: boolean
   /** Target muscles, as react-body-highlighter slugs. */
   primary?: Muscle[]
   secondary?: Muscle[]

@@ -85,15 +85,22 @@ export interface Suggestion {
 export const suggestNext = (
   last: Session | undefined,
   unit: Unit,
-  exercise: Pick<Exercise, 'repMin' | 'repMax' | 'sets'>,
+  exercise: Pick<Exercise, 'repMin' | 'repMax' | 'sets' | 'equipment' | 'timed' | 'unilateral'>,
 ): Suggestion => {
   const floor = exercise.repMin
   const ceiling = exercise.repMax
+  const u = exercise.timed ? 's' : 'reps'
+  const side = exercise.unilateral ? ' per side' : ''
+  const bodyweight = exercise.equipment === 'Bodyweight'
   if (!last || last.sets.length === 0) {
     return {
       kind: 'first',
       title: 'First session',
-      detail: `Recommended ${exercise.sets} × ${floor}–${ceiling}. Pick a weight where the last rep of each set is hard but clean.`,
+      detail: exercise.timed
+        ? `Recommended ${exercise.sets} × ${floor}–${ceiling} s${side}. Log the seconds held as reps; add weight later for more challenge.`
+        : bodyweight
+          ? `Recommended ${exercise.sets} × ${floor}–${ceiling} reps${side}. Leave weight at 0, or enter any added weight (belt, vest).`
+          : `Recommended ${exercise.sets} × ${floor}–${ceiling} reps${side}. Pick a weight where the last rep of each set is hard but clean.`,
       sets: Array.from({ length: exercise.sets }, () => ({ weight: 0, reps: floor })),
     }
   }
@@ -102,34 +109,42 @@ export const suggestNext = (
   const minReps = Math.min(...last.sets.map((s) => s.reps))
 
   if (minReps >= ceiling) {
+    if (top.weight === 0) {
+      // Unloaded bodyweight / timed work: keep extending instead of forcing a weight jump.
+      const bump = exercise.timed ? 10 : 2
+      return {
+        kind: 'reps',
+        title: exercise.timed ? `Hold ${bump} s longer` : `Add ${bump} ${u} to each set`,
+        detail: `You hit ${ceiling}+ ${u} on every set. Keep building, or add weight (belt, vest, plate) and drop back to ${floor} ${u}.`,
+        sets: last.sets.map((s) => ({ weight: s.weight, reps: s.reps + bump })),
+      }
+    }
     const w = top.weight + step
     return {
       kind: 'weight',
       title: `Go up to ${fmtWeight(w)} ${unit}`,
-      detail: `You hit ${ceiling}+ reps on every set. Add weight and aim for ${floor}+ reps.`,
+      detail: `You hit ${ceiling}+ ${u} on every set. Add weight and aim for ${floor}+ ${u}${side}.`,
       sets: last.sets.map(() => ({ weight: w, reps: floor })),
     }
   }
   if (minReps < floor) {
     return {
       kind: 'repeat',
-      title: `Stay at ${fmtWeight(top.weight)} ${unit}`,
-      detail: `Build up to ${floor}+ reps on every set before adding weight.`,
+      title: top.weight === 0 ? 'Same as last time' : `Stay at ${fmtWeight(top.weight)} ${unit}`,
+      detail: `Build up to ${floor}+ ${u} on every set before adding ${top.weight === 0 ? 'load' : 'weight'}.`,
       sets: last.sets.map((s) => ({ weight: s.weight, reps: Math.max(s.reps, floor) })),
     }
   }
   return {
     kind: 'reps',
-    title: 'Add a rep to each set',
-    detail: `Same weight, one more rep per set. At ${ceiling} reps everywhere, add ${fmtWeight(step)} ${unit}.`,
-    sets: last.sets.map((s) => ({ weight: s.weight, reps: s.reps + 1 })),
+    title: exercise.timed ? 'Hold a little longer' : 'Add a rep to each set',
+    detail: exercise.timed
+      ? `Same load, a few more seconds per set. At ${ceiling} s everywhere, add weight.`
+      : `Same weight, one more rep per set${side}. At ${ceiling} reps everywhere, add ${fmtWeight(step)} ${unit}.`,
+    sets: last.sets.map((s) => ({ weight: s.weight, reps: s.reps + (exercise.timed ? 5 : 1) })),
   }
 }
 
-/**
- * Compare two sessions for progressive overload: heavier top set wins, then more
- * reps at the same weight, then a better estimated 1RM.
- */
 export const compareProgress = (a: SetEntry[], b: SetEntry[]): number => {
   const ta = topSet(a); const tb = topSet(b)
   if (!ta || !tb) return 0

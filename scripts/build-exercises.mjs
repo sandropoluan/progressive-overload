@@ -67,11 +67,11 @@ const C = [
   ['lat-pulldown', 'Lat Pulldown', 'Back', 'Cable', 8, 12, 3, 'lat-pulldown', 'Wide-Grip_Lat_Pulldown'],
   ['close-grip-pulldown', 'Close-Grip Lat Pulldown', 'Back', 'Cable', 8, 12, 3, 'close-grip-lat-pulldown', 'Close-Grip_Front_Lat_Pulldown'],
   ['v-bar-pulldown', 'V-Bar Pulldown', 'Back', 'Cable', 8, 12, 3, 'close-grip-lat-pulldown', 'V-Bar_Pulldown'],
-  ['single-arm-pulldown', 'One-Arm Lat Pulldown', 'Back', 'Cable', 10, 12, 3, 'lat-pulldown', 'One_Arm_Lat_Pulldown'],
+  ['single-arm-pulldown', 'One-Arm Lat Pulldown', 'Back', 'Cable', 8, 12, 3, 'lat-pulldown', 'One_Arm_Lat_Pulldown'],
   ['underhand-pulldown', 'Underhand Pulldown', 'Back', 'Cable', 8, 12, 3, 'reverse-grip-lat-pulldown', 'Underhand_Cable_Pulldowns'],
   ['straight-arm-pulldown', 'Straight-Arm Pulldown', 'Back', 'Cable', 12, 15, 3, 'straight-arm-pulldown', 'Straight-Arm_Pulldown'],
   ['seated-cable-row', 'Seated Cable Row', 'Back', 'Cable', 8, 12, 3, 'seated-cable-row', 'Seated_Cable_Rows'],
-  ['one-arm-cable-row', 'One-Arm Cable Row', 'Back', 'Cable', 10, 12, 3, 'single-arm-cable-row', 'Seated_One-arm_Cable_Pulley_Rows'],
+  ['one-arm-cable-row', 'One-Arm Cable Row', 'Back', 'Cable', 8, 12, 3, 'single-arm-cable-row', 'Seated_One-arm_Cable_Pulley_Rows'],
   ['row-machine', 'Row Machine', 'Back', 'Machine', 8, 12, 3, 'machine-row', 'Leverage_Iso_Row'],
   ['high-row-machine', 'High Row Machine', 'Back', 'Machine', 8, 12, 3, 'machine-high-row', 'Leverage_High_Row'],
   ['pullover-machine', 'Pullover Machine', 'Back', 'Machine', 10, 15, 3, 'machine-pullover', null],
@@ -123,7 +123,7 @@ const C = [
   ['cross-body-hammer-curl', 'Cross-Body Hammer Curl', 'Biceps', 'Dumbbell', 8, 12, 3, 'cross-body-hammer-curl', 'Cross_Body_Hammer_Curl'],
   ['incline-db-curl', 'Incline Dumbbell Curl', 'Biceps', 'Dumbbell', 10, 15, 3, 'incline-dumbbell-curl', 'Incline_Dumbbell_Curl'],
   ['concentration-curl', 'Concentration Curl', 'Biceps', 'Dumbbell', 10, 15, 3, 'concentration-curl', 'Concentration_Curls'],
-  ['preacher-curl', 'Preacher Curl', 'Biceps', 'Barbell', 10, 12, 3, 'preacher-curl', 'Preacher_Curl'],
+  ['preacher-curl', 'Preacher Curl', 'Biceps', 'Barbell', 8, 12, 3, 'preacher-curl', 'Preacher_Curl'],
   ['db-preacher-curl', 'Dumbbell Preacher Curl', 'Biceps', 'Dumbbell', 10, 15, 3, 'dumbbell-preacher-curl', 'One_Arm_Dumbbell_Preacher_Curl'],
   ['preacher-curl-machine', 'Preacher Curl Machine', 'Biceps', 'Machine', 10, 15, 3, 'machine-preacher-curl', 'Machine_Preacher_Curls'],
   ['bicep-curl-machine', 'Bicep Curl Machine', 'Biceps', 'Machine', 10, 15, 3, 'machine-preacher-curl', 'Machine_Bicep_Curl'],
@@ -132,7 +132,7 @@ const C = [
   ['high-cable-curl', 'High Cable Curl', 'Biceps', 'Cable', 10, 15, 3, 'cable-curl', 'High_Cable_Curls'],
   ['cable-hammer-curl', 'Rope Hammer Curl', 'Biceps', 'Cable', 10, 15, 3, 'rope-hammer-curl', 'Cable_Hammer_Curls_-_Rope_Attachment'],
   ['spider-curl', 'Spider Curl', 'Biceps', 'Barbell', 10, 15, 3, 'spider-curl', 'Spider_Curl'],
-  ['zottman-curl', 'Zottman Curl', 'Biceps', 'Dumbbell', 10, 12, 3, 'zottman-curl', 'Zottman_Curl'],
+  ['zottman-curl', 'Zottman Curl', 'Biceps', 'Dumbbell', 8, 12, 3, 'zottman-curl', 'Zottman_Curl'],
   // ---- Triceps ----
   ['triceps-pushdown', 'Triceps Pushdown', 'Triceps', 'Cable', 10, 15, 3, 'tricep-pushdowns', 'Triceps_Pushdown'],
   ['rope-pushdown', 'Rope Pushdown', 'Triceps', 'Cable', 10, 15, 3, 'tricep-pushdowns', 'Triceps_Pushdown_-_Rope_Attachment'],
@@ -158,7 +158,7 @@ const C = [
   ['reverse-wrist-curl', 'Reverse Wrist Curl', 'Forearms', 'Barbell', 12, 20, 3, 'reverse-wrist-curl', 'Seated_Palms-Down_Barbell_Wrist_Curl'],
   ['db-wrist-curl', 'Dumbbell Wrist Curl', 'Forearms', 'Dumbbell', 12, 20, 3, 'dumbbell-wrist-curl', 'Seated_Dumbbell_Palms-Up_Wrist_Curl'],
   ['reverse-curl', 'Reverse Curl', 'Forearms', 'Barbell', 10, 15, 3, 'reverse-curl', 'Reverse_Barbell_Curl'],
-  ['wrist-roller', 'Wrist Roller', 'Forearms', 'Barbell', 2, 4, 3, 'wrist-roller', 'Wrist_Roller'],
+  ['wrist-roller', 'Wrist Roller (reps = full rolls)', 'Forearms', 'Barbell', 2, 4, 3, 'wrist-roller', 'Wrist_Roller'],
   ['farmers-walk', "Farmer's Walk (reps = seconds)", 'Forearms', 'Dumbbell', 30, 60, 3, 'farmers-walk', 'Farmers_Walk'],
   // ---- Legs ----
   ['squat', 'Back Squat', 'Legs', 'Barbell', 5, 8, 4, 'squat', 'Barbell_Squat'],
@@ -180,15 +180,15 @@ const C = [
   ['standing-leg-curl', 'Standing Leg Curl', 'Legs', 'Machine', 10, 15, 3, 'standing-leg-curl-machine', 'Standing_Leg_Curl'],
   ['nordic-curl', 'Nordic Hamstring Curl', 'Legs', 'Bodyweight', 5, 8, 3, 'nordic-hamstring-curl', 'Natural_Glute_Ham_Raise'],
   ['romanian-deadlift', 'Romanian Deadlift', 'Legs', 'Barbell', 8, 12, 3, 'romanian-deadlift', 'Romanian_Deadlift'],
-  ['db-rdl', 'Dumbbell Romanian Deadlift', 'Legs', 'Dumbbell', 10, 12, 3, 'dumbbell-romanian-deadlift', 'Stiff-Legged_Dumbbell_Deadlift'],
+  ['db-rdl', 'Dumbbell Romanian Deadlift', 'Legs', 'Dumbbell', 8, 12, 3, 'dumbbell-romanian-deadlift', 'Stiff-Legged_Dumbbell_Deadlift'],
   ['stiff-leg-deadlift', 'Stiff-Leg Deadlift', 'Legs', 'Barbell', 8, 12, 3, 'romanian-deadlift', 'Stiff-Legged_Barbell_Deadlift'],
   ['single-leg-rdl', 'Single-Leg Romanian Deadlift', 'Legs', 'Dumbbell', 8, 12, 3, 'single-leg-romanian-deadlift', null],
   ['bulgarian-split-squat', 'Bulgarian Split Squat', 'Legs', 'Dumbbell', 8, 12, 3, 'bulgarian-split-squat', 'Split_Squat_with_Dumbbells'],
-  ['lunge', 'Dumbbell Lunge', 'Legs', 'Dumbbell', 10, 12, 3, 'dumbbell-lunge', 'Dumbbell_Lunges'],
-  ['reverse-lunge', 'Reverse Lunge', 'Legs', 'Dumbbell', 10, 12, 3, 'dumbbell-reverse-lunge', 'Dumbbell_Rear_Lunge'],
+  ['lunge', 'Dumbbell Lunge', 'Legs', 'Dumbbell', 8, 12, 3, 'dumbbell-lunge', 'Dumbbell_Lunges'],
+  ['reverse-lunge', 'Reverse Lunge', 'Legs', 'Dumbbell', 8, 12, 3, 'dumbbell-reverse-lunge', 'Dumbbell_Rear_Lunge'],
   ['barbell-lunge', 'Barbell Lunge', 'Legs', 'Barbell', 8, 12, 3, 'barbell-lunge', 'Barbell_Lunge'],
   ['walking-lunge', 'Barbell Walking Lunge', 'Legs', 'Barbell', 8, 12, 3, 'barbell-lunge', 'Barbell_Walking_Lunge'],
-  ['step-up', 'Dumbbell Step-Up', 'Legs', 'Dumbbell', 10, 12, 3, 'dumbbell-step-up', 'Dumbbell_Step_Ups'],
+  ['step-up', 'Dumbbell Step-Up', 'Legs', 'Dumbbell', 8, 12, 3, 'dumbbell-step-up', 'Dumbbell_Step_Ups'],
   ['glute-ham-raise', 'Glute Ham Raise', 'Legs', 'Machine', 8, 12, 3, 'glute-ham-raise', 'Glute_Ham_Raise'],
   ['sissy-squat', 'Sissy Squat', 'Legs', 'Bodyweight', 10, 15, 3, 'sissy-squat', 'Weighted_Sissy_Squat'],
   ['calf-raise', 'Standing Calf Raise', 'Legs', 'Machine', 12, 20, 4, 'standing-calf-raise-machine', 'Standing_Calf_Raises'],
@@ -239,7 +239,7 @@ const C = [
   ['dragon-flag', 'Dragon Flag', 'Core', 'Bodyweight', 5, 8, 3, 'dragon-flag', null],
   // ---- Full body ----
   ['power-clean', 'Power Clean', 'Full body', 'Barbell', 3, 5, 5, 'power-clean', 'Power_Clean'],
-  ['clean-and-press', 'Clean & Press', 'Full body', 'Barbell', 5, 8, 4, 'power-clean', 'Clean_and_Press'],
+  ['clean-and-press', 'Clean & Press', 'Full body', 'Barbell', 3, 6, 4, 'power-clean', 'Clean_and_Press'],
   ['clean-and-jerk', 'Clean & Jerk', 'Full body', 'Barbell', 3, 5, 5, 'push-jerk', 'Clean_and_Jerk'],
   ['hang-clean', 'Hang Clean', 'Full body', 'Barbell', 3, 5, 5, 'hang-clean', 'Hang_Clean'],
   ['push-jerk', 'Push Jerk', 'Full body', 'Barbell', 3, 5, 5, 'push-jerk', 'Power_Jerk'],
@@ -311,6 +311,11 @@ const NO_IMAGE = new Set([
   'clean-and-press', 'clean-and-jerk', 'db-clean',
 ])
 
+// Exercises logged as seconds rather than reps.
+const TIMED = new Set(['plank', 'side-plank', 'farmers-walk'])
+// Unilateral exercises the dataset does not flag (or flags under a different variant).
+const UNILATERAL_EXTRA = new Set(['single-arm-pulldown', 'one-arm-cable-row', 'single-arm-pushdown', 'single-arm-cable-curl', 'db-row', 'concentration-curl', 'kickback', 'cable-kickback', 'glute-kickback', 'glute-kickback-machine', 'bw-glute-kickback', 'single-leg-rdl', 'single-leg-glute-bridge', 'bulgarian-split-squat', 'lunge', 'reverse-lunge', 'barbell-lunge', 'walking-lunge', 'step-up', 'side-plank', 'db-side-bend', 'turkish-get-up', 'kettlebell-clean', 'kettlebell-snatch', 'landmine-press', 'renegade-row', 'cable-woodchop', 'pallof-press', 'standing-leg-curl', 'db-preacher-curl'])
+
 // Caption shown on a single-frame illustration (defaults to "Hold").
 const CAPTIONS = {
   'hip-abduction': 'Start · push the pads outward',
@@ -343,6 +348,8 @@ async function main() {
     return { id, name, muscle, equipment, repMin, repMax, sets, custom: false, image,
       ...(image && (FRAME_OVERRIDES[id] ?? e.frames).length === 1 ? { single: true } : {}),
       ...(image && CAPTIONS[id] ? { caption: CAPTIONS[id] } : {}),
+      ...(e.unilateral || UNILATERAL_EXTRA.has(id) ? { unilateral: true } : {}),
+      ...(TIMED.has(id) ? { timed: true } : {}),
       ...(image && e.width / e.height > WIDE_RATIO ? { wide: true } : {}),
       primary, secondary }
   })

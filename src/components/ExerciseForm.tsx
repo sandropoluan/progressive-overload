@@ -10,6 +10,7 @@ export interface ExerciseValues {
   repMax: number
   sets: number
   primary: Muscle[]
+  unilateral: boolean
 }
 
 interface Props {
@@ -41,6 +42,7 @@ function Body({ onClose, onSubmit, initial }: Omit<Props, 'open'>) {
   const [repMax, setRepMax] = useState(String(initial?.repMax ?? 12))
   const [sets, setSets] = useState(String(initial?.sets ?? 3))
   const [primary, setPrimary] = useState<Muscle[]>(initial?.primary ?? [])
+  const [unilateral, setUnilateral] = useState(initial?.unilateral ?? false)
   const toggleMuscle = (m: Muscle) => setPrimary((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]))
 
   const lo = clampInt(repMin, 1, 100, 8)
@@ -54,7 +56,7 @@ function Body({ onClose, onSubmit, initial }: Omit<Props, 'open'>) {
       onSubmit={(e) => {
         e.preventDefault()
         if (!valid) return
-        onSubmit({ name: name.trim(), muscle, equipment, repMin: lo, repMax: hi, sets: nSets, primary })
+        onSubmit({ name: name.trim(), muscle, equipment, repMin: lo, repMax: hi, sets: nSets, primary, unilateral })
       }}
     >
       <div className="field">
@@ -100,6 +102,10 @@ function Body({ onClose, onSubmit, initial }: Omit<Props, 'open'>) {
             </button>
           ))}
         </div>
+        <label className="check-row">
+          <input type="checkbox" checked={unilateral} onChange={(e) => setUnilateral(e.target.checked)} />
+          <span>Reps are per side (one arm / one leg at a time)</span>
+        </label>
         <div className="range-row">
           <input className="input num" inputMode="numeric" aria-label="Sets" value={sets} onChange={(e) => setSets(e.target.value.replace(/\D/g, ''))} />
           <span className="x">sets ×</span>
