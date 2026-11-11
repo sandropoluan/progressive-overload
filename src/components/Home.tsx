@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { compareProgress, exerciseImage, fmtWeight, prSessionIds, relativeDay, sortByDateDesc, startOfWeek, topSet } from '../lib/utils'
+import { matchScore, searchText } from '../lib/search'
 import { useStore, type HomeFilter } from '../store'
 import { MUSCLE_GROUPS, type Exercise, type Session } from '../types'
 import { ExerciseForm } from './ExerciseForm'
@@ -41,13 +42,24 @@ export function Home() {
   }, [sessions])
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = query.trim()
     let list = exercises.filter((e) => !e.archived)
-    if (q) list = list.filter((e) => e.name.toLowerCase().includes(q) || e.muscle.toLowerCase().includes(q) || e.equipment.toLowerCase().includes(q))
     if (filter === 'Recent') list = list.filter((e) => byExercise.has(e.id))
     else if (filter !== 'All') list = list.filter((e) => e.muscle === filter)
-    // Recently trained first, then alphabetical.
+    const score = new Map<string, number>()
+    if (q) {
+      list = list.filter((e) => {
+        const sc = matchScore(q, searchText(e))
+        if (sc >= 0) score.set(e.id, sc)
+        return sc >= 0
+      })
+    }
     return [...list].sort((a, b) => {
+      // With a query: best match first. Otherwise recently trained first, then alphabetical.
+      if (q) {
+        const d = (score.get(a.id) ?? 9) - (score.get(b.id) ?? 9)
+        if (d !== 0) return d
+      }
       const la = byExercise.get(a.id)?.[0]?.date ?? ''
       const lb = byExercise.get(b.id)?.[0]?.date ?? ''
       if (la !== lb) return lb.localeCompare(la)
