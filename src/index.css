@@ -458,3 +458,11 @@ html.overlay-open, html.overlay-open body { overflow: hidden; }
 /* No visible scrollbars inside the app's own scroll containers. */
 .page-overlay, .sheet, .chips { scrollbar-width: none; -ms-overflow-style: none; }
 .page-overlay::-webkit-scrollbar, .sheet::-webkit-scrollbar, .chips::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+.chip.secondary { background: rgba(94, 122, 42, 0.45); border-color: rgba(200, 255, 77, 0.35); color: #d8ff7a; }
+.muscle-key { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--text-2); font-weight: 600; }
+.muscle-key span { display: inline-flex; align-items: center; gap: 6px; }
+.muscle-key .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.muscle-key .sw.primary { background: var(--accent); }
+.muscle-key .sw.secondary { background: #5e7a2a; }
+.muscle-key .hint { width: 100%; color: var(--muted); font-weight: 500; }

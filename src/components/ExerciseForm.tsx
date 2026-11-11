@@ -10,6 +10,7 @@ export interface ExerciseValues {
   repMax: number
   sets: number
   primary: Muscle[]
+  secondary: Muscle[]
   unilateral: boolean
 }
 
@@ -42,8 +43,14 @@ function Body({ onClose, onSubmit, initial }: Omit<Props, 'open'>) {
   const [repMax, setRepMax] = useState(String(initial?.repMax ?? 12))
   const [sets, setSets] = useState(String(initial?.sets ?? 3))
   const [primary, setPrimary] = useState<Muscle[]>(initial?.primary ?? [])
+  const [secondary, setSecondary] = useState<Muscle[]>(initial?.secondary ?? [])
   const [unilateral, setUnilateral] = useState(initial?.unilateral ?? false)
-  const toggleMuscle = (m: Muscle) => setPrimary((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]))
+  // Each chip cycles: none -> primary -> secondary -> none.
+  const cycleMuscle = (m: Muscle) => {
+    if (primary.includes(m)) { setPrimary((p) => p.filter((x) => x !== m)); setSecondary((p) => [...p, m]) }
+    else if (secondary.includes(m)) setSecondary((p) => p.filter((x) => x !== m))
+    else setPrimary((p) => [...p, m])
+  }
 
   const lo = clampInt(repMin, 1, 100, 8)
   const hi = Math.max(lo, clampInt(repMax, 1, 100, 12))
@@ -56,7 +63,7 @@ function Body({ onClose, onSubmit, initial }: Omit<Props, 'open'>) {
       onSubmit={(e) => {
         e.preventDefault()
         if (!valid) return
-        onSubmit({ name: name.trim(), muscle, equipment, repMin: lo, repMax: hi, sets: nSets, primary, unilateral })
+        onSubmit({ name: name.trim(), muscle, equipment, repMin: lo, repMax: hi, sets: nSets, primary, secondary, unilateral })
       }}
     >
       <div className="field">
@@ -118,11 +125,26 @@ function Body({ onClose, onSubmit, initial }: Omit<Props, 'open'>) {
         <div className="field">
           <label>Target muscles <span style={{ color: 'var(--muted)', fontWeight: 500 }}>(optional, for the body map)</span></label>
           <div className="muscle-chips">
-            {MUSCLE_OPTIONS.map((m) => (
-              <button type="button" key={m.slug} className={`chip ${primary.includes(m.slug) ? 'active' : ''}`} onClick={() => toggleMuscle(m.slug)}>
-                {m.label}
-              </button>
-            ))}
+            {MUSCLE_OPTIONS.map((m) => {
+              const state = primary.includes(m.slug) ? 'primary' : secondary.includes(m.slug) ? 'secondary' : 'off'
+              return (
+                <button
+                  type="button"
+                  key={m.slug}
+                  className={`chip ${state === 'primary' ? 'active' : state === 'secondary' ? 'secondary' : ''}`}
+                  aria-pressed={state !== 'off'}
+                  title={state === 'off' ? 'Tap: primary' : state === 'primary' ? 'Tap: secondary' : 'Tap: remove'}
+                  onClick={() => cycleMuscle(m.slug)}
+                >
+                  {m.label}
+                </button>
+              )
+            })}
+          </div>
+          <div className="muscle-key">
+            <span><i className="sw primary" /> Primary</span>
+            <span><i className="sw secondary" /> Secondary</span>
+            <span className="hint">Tap a muscle once for primary, twice for secondary, again to clear.</span>
           </div>
         </div>
       )}
