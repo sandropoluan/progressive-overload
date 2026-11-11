@@ -316,6 +316,9 @@ const TIMED = new Set(['plank', 'side-plank', 'farmers-walk'])
 // Unilateral exercises the dataset does not flag (or flags under a different variant).
 const UNILATERAL_EXTRA = new Set(['single-arm-pulldown', 'one-arm-cable-row', 'single-arm-pushdown', 'single-arm-cable-curl', 'db-row', 'concentration-curl', 'kickback', 'cable-kickback', 'glute-kickback', 'glute-kickback-machine', 'bw-glute-kickback', 'single-leg-rdl', 'single-leg-glute-bridge', 'bulgarian-split-squat', 'lunge', 'reverse-lunge', 'barbell-lunge', 'walking-lunge', 'step-up', 'side-plank', 'db-side-bend', 'turkish-get-up', 'kettlebell-clean', 'kettlebell-snatch', 'landmine-press', 'renegade-row', 'cable-woodchop', 'pallof-press', 'standing-leg-curl', 'db-preacher-curl'])
 
+// Dataset marks these unilateral but both sides work together.
+const UNILATERAL_NOT = new Set(['hip-abduction'])
+
 // Caption shown on a single-frame illustration (defaults to "Hold").
 const CAPTIONS = {
   'hip-abduction': 'Start · push the pads outward',
@@ -348,7 +351,7 @@ async function main() {
     return { id, name, muscle, equipment, repMin, repMax, sets, custom: false, image,
       ...(image && (FRAME_OVERRIDES[id] ?? e.frames).length === 1 ? { single: true } : {}),
       ...(image && CAPTIONS[id] ? { caption: CAPTIONS[id] } : {}),
-      ...(e.unilateral || UNILATERAL_EXTRA.has(id) ? { unilateral: true } : {}),
+      ...((e.unilateral || UNILATERAL_EXTRA.has(id)) && !UNILATERAL_NOT.has(id) ? { unilateral: true } : {}),
       ...(TIMED.has(id) ? { timed: true } : {}),
       ...(image && e.width / e.height > WIDE_RATIO ? { wide: true } : {}),
       primary, secondary }
