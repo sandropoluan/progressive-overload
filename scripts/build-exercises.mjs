@@ -294,6 +294,12 @@ const MUSCLE_OVERRIDES = {
   'hip-adduction': { primary: ['adductor'], secondary: ['gluteal'] },
 }
 
+// Frames to use where the dataset's own frames are wrong. A single frame renders as a held pose.
+// hip-abduction: the dataset's "end" frame shows the pads inside the knees (adduction geometry).
+const FRAME_OVERRIDES = {
+  'hip-abduction': ['start'],
+}
+
 const fetchJson = async (url) => (await fetch(url)).json()
 const ts = (v) => JSON.stringify(v)
 
@@ -318,7 +324,7 @@ async function main() {
     const primary = MUSCLE_OVERRIDES[id]?.primary ?? toSlugs(e.muscles.primary)
     const secondary = (MUSCLE_OVERRIDES[id]?.secondary ?? toSlugs(e.muscles.secondary)).filter((m) => !primary.includes(m))
     return { id, name, muscle, equipment, repMin, repMax, sets, custom: false, image: true,
-      ...(e.frames.length === 1 ? { single: true } : {}),
+      ...((FRAME_OVERRIDES[id] ?? e.frames).length === 1 ? { single: true } : {}),
       ...(e.width / e.height > WIDE_RATIO ? { wide: true } : {}),
       primary, secondary }
   })
@@ -342,7 +348,7 @@ async function main() {
     const e = illu.get(oid)
     const height = e.width / e.height > WIDE_RATIO ? WIDE_HEIGHT : IMG_HEIGHT
     // Most exercises have start/end frames; a few are single-pose (one frame) or use other names.
-    const keys = e.frames.length ? e.frames : Object.keys(e.images)
+    const keys = FRAME_OVERRIDES[id] ?? (e.frames.length ? e.frames : Object.keys(e.images))
     const pick = { start: keys[0], end: keys[keys.length - 1] }
     for (const frame of ['start', 'end']) {
       const out = join(outRoot, id, `${frame}.webp`)
