@@ -12,9 +12,32 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <title>Overload</title>
+    <!-- Painted without waiting for the app script, so a cold start is never a blank screen. -->
+    <style>
+      html, body { margin: 0; background: #0b0d12; }
+      .boot { max-width: 560px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; }
+      .boot-head { display: flex; align-items: center; gap: 10px; padding: 10px 0 14px; }
+      .boot-head img { width: 34px; height: 34px; border-radius: 10px; }
+      .boot-head b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: #eef1f7; line-height: 1.45; }
+      .boot-head span { display: block; font-size: 13px; color: #727b91; margin-top: 1px; }
+      .boot-sk { border-radius: 18px; background: #151925; border: 1px solid rgba(255, 255, 255, 0.07); animation: boot-pulse 1.2s ease-in-out infinite alternate; }
+      .boot-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+      .boot-row .boot-sk { height: 74px; border-radius: 12px; }
+      @keyframes boot-pulse { from { opacity: 0.55; } to { opacity: 1; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Placeholder shell; React replaces it on mount. -->
+      <div class="boot" aria-hidden="true">
+        <div class="boot-head">
+          <img src="favicon.svg" alt="" />
+          <div><b>Overload</b><span>Progressive overload tracker</span></div>
+        </div>
+        <div class="boot-row"><div class="boot-sk"></div><div class="boot-sk"></div><div class="boot-sk"></div></div>
+        <div class="boot-sk" style="height: 300px"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

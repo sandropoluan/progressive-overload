@@ -1,10 +1,15 @@
-import { useCallback, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import { ExerciseDetail } from './components/ExerciseDetail'
 import { Home } from './components/Home'
 import { PageOverlay } from './components/PageOverlay'
-import { Settings } from './components/Settings'
 import { useRoute } from './lib/router'
+
+// Detail pages (and the instruction texts and muscle map they pull in) load separately
+// so the home screen does not wait for them.
+const loadExerciseDetail = () => import('./components/ExerciseDetail').then((m) => ({ default: m.ExerciseDetail }))
+const loadSettings = () => import('./components/Settings').then((m) => ({ default: m.Settings }))
+const ExerciseDetail = lazy(loadExerciseDetail)
+const Settings = lazy(loadSettings)
 
 export default function App() {
   const route = useRoute()
@@ -19,6 +24,12 @@ export default function App() {
 
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
 
+  // Fetch the detail pages right after startup so opening one is instant.
+  useEffect(() => {
+    const t = window.setTimeout(() => { void loadExerciseDetail(); void loadSettings() }, 1200)
+    return () => window.clearTimeout(t)
+  }, [])
+
   return (
     <>
       {/* The home screen is always mounted; detail pages open as a layer above it. */}
@@ -27,12 +38,12 @@ export default function App() {
       </div>
       {route.name === 'exercise' && (
         <PageOverlay key={route.id}>
-          <ExerciseDetail id={route.id} toast={toast} />
+          <Suspense fallback={null}><ExerciseDetail id={route.id} toast={toast} /></Suspense>
         </PageOverlay>
       )}
       {route.name === 'settings' && (
         <PageOverlay key="settings">
-          <Settings toast={toast} />
+          <Suspense fallback={null}><Settings toast={toast} /></Suspense>
         </PageOverlay>
       )}
 

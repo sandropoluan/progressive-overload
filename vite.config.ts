@@ -31,8 +31,21 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2}'],
+        // Precache only the app shell. The service worker installs all-or-nothing, and
+        // with the ~400 exercise images in this list the install took minutes and kept
+        // failing on GitHub Pages, so the app was never served from cache.
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        globIgnores: ['exercises/**'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Exercise images are cached as they are seen; src/lib/warmImages.ts fetches the
+        // rest in the background so they still work offline. Keep cacheName in sync with it.
+        runtimeCaching: [
+          {
+            urlPattern: /\/exercises\/.+\.webp$/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'exercise-images', cacheableResponse: { statuses: [200] } },
+          },
+        ],
         navigateFallback: `${base}index.html`,
         cleanupOutdatedCaches: true,
       },

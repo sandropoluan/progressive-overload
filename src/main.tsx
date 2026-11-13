@@ -8,3 +8,8 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Well after startup, so it never competes with the first paint.
+if (import.meta.env.PROD) {
+  window.setTimeout(() => void import('./lib/warmImages').then((m) => m.warmExerciseImages()), 5000)
+}
