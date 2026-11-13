@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "build:exercises": "node scripts/build-exercises.mjs"
+    "build:exercises": "node scripts/build-exercises.mjs",
+    "build:splash": "node scripts/build-splash.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

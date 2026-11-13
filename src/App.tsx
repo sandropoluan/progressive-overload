@@ -3,6 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 import { Home } from './components/Home'
 import { PageOverlay } from './components/PageOverlay'
 import { useRoute } from './lib/router'
+import { markAppReady } from './lib/startup'
 
 // Detail pages (and the instruction texts and muscle map they pull in) load separately
 // so the home screen does not wait for them.
@@ -26,6 +27,7 @@ export default function App() {
 
   // Fetch the detail pages right after startup so opening one is instant.
   useEffect(() => {
+    markAppReady()
     const t = window.setTimeout(() => { void loadExerciseDetail(); void loadSettings() }, 1200)
     return () => window.clearTimeout(t)
   }, [])

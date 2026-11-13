@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { goBack } from '../lib/router'
+import { startupSummary } from '../lib/startup'
 import { exportData, isExportData, useStore } from '../store'
 import type { Unit } from '../types'
 import { ChevronLeft, Download, Upload } from './Icons'
@@ -15,6 +16,8 @@ export function Settings({ toast }: Props) {
   const { importData, resetAll } = useStore.getState()
   const fileRef = useRef<HTMLInputElement>(null)
   const [confirmReset, setConfirmReset] = useState(false)
+  // Read once per mount; the numbers describe the launch, not this render.
+  const [startup] = useState(startupSummary)
 
   const doExport = () => {
     const blob = new Blob([JSON.stringify(exportData(), null, 2)], { type: 'application/json' })
@@ -85,6 +88,11 @@ export function Settings({ toast }: Props) {
           Overload stores everything on this device and works fully offline. Install it from your browser's
           "Add to Home Screen" menu for the best experience. Export a backup before clearing browser data.
         </p>
+        {startup && (
+          <p className="num" style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
+            Last launch: {startup}
+          </p>
+        )}
       </div>
 
       <Sheet open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset everything?">
