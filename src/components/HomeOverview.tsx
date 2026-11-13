@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { fmtWeight, sessionVolume, startOfWeek } from '../lib/utils'
 import type { Session, Unit } from '../types'
+import { WeekDetail, type Week } from './WeekDetail'
 
 type Metric = 'volume' | 'sets' | 'reps'
 const WEEKS = 12
@@ -9,14 +10,16 @@ const W = 520
 const H = 150
 const PAD = { top: 10, right: 8, bottom: 22, left: 8 }
 
-interface Week { start: Date; volume: number; sets: number; reps: number; sessions: number; days: number[] }
-
 const fmtK = (v: number) => (v >= 10_000 ? `${(v / 1000).toFixed(0)}k` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : fmtWeight(v))
 const weekLabel = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 
 export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Unit }) {
   const [metric, setMetric] = useState<Metric>('volume')
   const [hover, setHover] = useState<number | null>(null)
+  // What the detail sheet shows: a whole week (bar tap) or one day of it (heatmap tap).
+  const [selected, setSelected] = useState<{ week: number; day?: number } | null>(null)
+  // Stable identity: the sheet's scroll lock re-runs whenever onClose changes.
+  const closeDetail = useCallback(() => setSelected(null), [])
   const svgRef = useRef<SVGSVGElement>(null)
   // Captured once per mount so the render stays pure.
   const [now] = useState(() => new Date())
@@ -26,7 +29,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
     const list: Week[] = Array.from({ length: WEEKS }, (_, i) => {
       const start = new Date(thisWeek)
       start.setDate(thisWeek.getDate() - (WEEKS - 1 - i) * 7)
-      return { start, volume: 0, sets: 0, reps: 0, sessions: 0, days: [0, 0, 0, 0, 0, 0, 0] }
+      return { start, volume: 0, sets: 0, reps: 0, sessions: 0, days: [0, 0, 0, 0, 0, 0, 0], items: [] }
     })
     const first = list[0].start.getTime()
     for (const s of sessions) {
@@ -40,6 +43,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
       w.sets += s.sets.length
       w.reps += s.sets.reduce((n, x) => n + x.reps, 0)
       w.sessions += 1
+      w.items.push(s)
       // Heatmap intensity counts sets, so bodyweight days light up too.
       const day = (new Date(s.date).getDay() + 6) % 7
       w.days[day] += s.sets.length
@@ -64,13 +68,16 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
   const pVal = prev ? (metric === 'volume' ? prev.volume : metric === 'sets' ? prev.sets : prev.reps) : undefined
   const delta = pVal !== undefined && pVal > 0 ? ((aVal - pVal) / pVal) * 100 : undefined
 
-  const onMove = (clientX: number) => {
+  const weekAt = (clientX: number): number | null => {
     const el = svgRef.current
-    if (!el) return
+    if (!el) return null
     const rect = el.getBoundingClientRect()
     const px = ((clientX - rect.left) / rect.width) * W
-    const i = Math.max(0, Math.min(WEEKS - 1, Math.floor((px - PAD.left) / slot)))
-    setHover(i)
+    return Math.max(0, Math.min(WEEKS - 1, Math.floor((px - PAD.left) / slot)))
+  }
+  const onMove = (clientX: number) => {
+    const i = weekAt(clientX)
+    if (i !== null) setHover(i)
   }
 
   // Heatmap intensity: quantise each day's volume against the busiest day.
@@ -117,8 +124,9 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
       <div className="chart-wrap">
         <svg
           ref={svgRef}
-          className="chart-svg"
+          className={`chart-svg ${hasData ? 'tappable' : ''}`}
           viewBox={`0 0 ${W} ${H}`}
+          onClick={(e) => { const i = hasData ? weekAt(e.clientX) : null; if (i !== null) setSelected({ week: i }) }}
           onMouseMove={(e) => onMove(e.clientX)}
           onMouseLeave={() => setHover(null)}
           onTouchStart={(e) => onMove(e.touches[0].clientX)}
@@ -173,6 +181,7 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
                 return (
                   <span
                     key={di}
+                    onClick={future ? undefined : () => setSelected({ week: wi, day: di })}
                     className={`heat-cell l${level(v)} ${isToday ? 'today' : ''} ${future ? 'future' : ''}`}
                     title={`${new Date(w.start.getTime() + di * DAY_MS).toLocaleDateString()}${v ? ` · ${v} sets` : ''}`}
                   />
@@ -182,6 +191,14 @@ export function HomeOverview({ sessions, unit }: { sessions: Session[]; unit: Un
           ))}
         </div>
       </div>
+
+      <WeekDetail
+        week={selected === null ? null : weeks[selected.week]}
+        prev={selected === null ? undefined : weeks[selected.week - 1]}
+        day={selected?.day}
+        unit={unit}
+        onClose={closeDetail}
+      />
     </div>
   )
 }
