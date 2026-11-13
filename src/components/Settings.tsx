@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { backupNow, describeBackup } from '../lib/backup'
+import { backupNow, describeBackup, usePendingChanges } from '../lib/backup'
 import { BackupError, compareBackup, parseBackup, type BackupComparison, type ParsedBackup } from '../lib/backupFormat'
 import { goBack } from '../lib/router'
 import { startupSummary } from '../lib/startup'
@@ -28,7 +28,8 @@ export function Settings({ toast }: Props) {
   const [startup] = useState(startupSummary)
 
   const lastBackupAt = useStore((s) => s.lastBackupAt)
-  const pendingBackup = useStore((s) => s.pendingBackup)
+  const pendingBackup = usePendingChanges()
+  const untracked = useStore((s) => !!s.lastBackupAt && !s.backupSnapshot)
 
   const [opened, setOpened] = useState<OpenedBackup | null>(null)
   const [confirmReplace, setConfirmReplace] = useState(false)
@@ -88,7 +89,7 @@ export function Settings({ toast }: Props) {
             <div className="l">Back up data</div>
             <div className="s">
               {lastBackupAt
-                ? `Last backup ${relativeDay(lastBackupAt).toLowerCase()}${pendingBackup > 0 ? ` · ${pendingBackup} change${pendingBackup === 1 ? '' : 's'} since` : ' · up to date'}`
+                ? `Last backup ${relativeDay(lastBackupAt).toLowerCase()}${untracked ? ' · back up once more to track changes' : pendingBackup > 0 ? ` · ${pendingBackup} change${pendingBackup === 1 ? '' : 's'} not in it` : ' · up to date'}`
                 : 'Never backed up.'}
             </div>
           </div>

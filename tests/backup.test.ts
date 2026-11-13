@@ -12,12 +12,14 @@ import {
   BackupError,
   buildBackup,
   compareBackup,
+  countChanges,
   countData,
   mergeData,
   parseBackup,
   reconcileExercises,
   sameJson,
   serializeBackup,
+  snapshotOf,
   type AppData,
 } from '../src/lib/backupFormat.ts'
 import type { Exercise, Session } from '../src/types.ts'
@@ -343,4 +345,83 @@ test('8. years of training round-trip: 6,000 sessions, nothing lost or reordered
   assert.equal(lastSession, state.sessions[5999].date)
   const restored = applyBackup(fresh(), data, 'merge', PRESET_EXERCISES)
   assert.deepEqual(restored.sessions, state.sessions)
+})
+
+// ------------------------------------------------------------ "N changes not backed up"
+
+test('9. the change count is the real difference from the last backup', () => {
+  const state = richState()
+  assert.equal(countChanges(state, undefined), 7 + 5, 'never backed up: 7 sessions + 3 custom, 1 edited, 1 deleted exercise')
+  const backup = snapshotOf(state)
+  assert.equal(countChanges(state, backup), 0)
+
+  // Add a session, delete it again: back to zero, not two.
+  const added = session('s-tmp', 'c-1', 14, [[30, 10]])
+  state.sessions.push(added)
+  assert.equal(countChanges(state, backup), 1)
+  state.sessions = state.sessions.filter((s) => s.id !== 's-tmp')
+  assert.equal(countChanges(state, backup), 0)
+
+  // The reported case: two real changes, then add/delete, add/delete, add.
+  state.sessions.push(session('k-1', 'c-1', 14, [[30, 10]]), session('k-2', 'c-2', 14, [[10, 8]]))
+  assert.equal(countChanges(state, backup), 2)
+  state.sessions.push(session('t-1', 'c-1', 14, [[30, 10]]))
+  assert.equal(countChanges(state, backup), 3)
+  state.sessions = state.sessions.filter((s) => s.id !== 't-1')
+  assert.equal(countChanges(state, backup), 2)
+  state.sessions.push(session('t-2', 'c-3', 14, [[16, 30]]))
+  state.sessions = state.sessions.filter((s) => s.id !== 't-2')
+  assert.equal(countChanges(state, backup), 2)
+  state.sessions.push(session('k-3', 'c-3', 14, [[16, 30]]))
+  assert.equal(countChanges(state, backup), 3)
+})
+
+test('9b. edits and deletions count once each, and undoing an edit clears it', () => {
+  const state = richState()
+  const backup = snapshotOf(state)
+  const s1 = state.sessions.find((s) => s.id === 's-1')!
+  s1.sets[0].reps = 6
+  assert.equal(countChanges(state, backup), 1, 'one edited session')
+  s1.sets[0].reps = 7
+  assert.equal(countChanges(state, backup), 1, 'editing the same session again is still one change')
+  s1.sets[0].reps = 5
+  assert.equal(countChanges(state, backup), 0, 'edited back to what the backup holds')
+  s1.note = 'new note'
+  assert.equal(countChanges(state, backup), 1, 'a note counts')
+  s1.note = undefined
+
+  state.sessions = state.sessions.filter((s) => s.id !== 's-2')
+  assert.equal(countChanges(state, backup), 1, 'a session deleted since the backup is one change')
+
+  const c1 = state.exercises.find((e) => e.id === 'c-1')!
+  c1.repMax = 20
+  assert.equal(countChanges(state, backup), 2, 'an edited custom exercise')
+  state.exercises.push(custom('c-new'))
+  assert.equal(countChanges(state, backup), 3, 'a new custom exercise')
+  // Editing a built-in exercise for the first time.
+  Object.assign(state.exercises[7], { repMin: 4, edited: true })
+  assert.equal(countChanges(state, backup), 4)
+})
+
+test('9c. app updates to built-in exercises are not counted as your changes', () => {
+  const state = richState()
+  const backup = snapshotOf(state)
+  // The library changes media and muscle maps of built-in exercises, including an edited one.
+  Object.assign(state.exercises[0], { image: false, wide: true, primary: ['chest'], caption: 'x' })
+  Object.assign(state.exercises[9], { name: 'Renamed by the library', repMin: 5, image: false })
+  assert.equal(countChanges(state, backup), 0)
+})
+
+test('9d. after backing up, and after restoring on a new device, the count is zero', () => {
+  const state = richState()
+  const file = parseBackup(fileOf(state).json).data
+  // Same device, right after the backup: fingerprint of what went into the file.
+  assert.equal(countChanges(state, snapshotOf(buildBackup(state))), 0)
+  // New device after restore: the app takes the fingerprint of the restored data.
+  const restored = applyBackup(fresh(), file, 'merge', PRESET_EXERCISES)
+  assert.equal(countChanges(restored, snapshotOf(restored)), 0)
+  // ...and that fingerprint is the same one the original device recorded.
+  assert.deepEqual(snapshotOf(json(restored)), snapshotOf(json(afterRestart(state))))
+  // It also survives being saved and loaded with the rest of the app data.
+  assert.equal(countChanges(json(state), json(snapshotOf(state))), 0)
 })

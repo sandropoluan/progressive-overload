@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { PRESET_EXERCISES } from './data/presets'
-import { applyBackup, buildBackup, reconcileExercises, type ExportData } from './lib/backupFormat'
+import { applyBackup, buildBackup, countChanges, reconcileExercises, snapshotOf, type BackupSnapshot, type ExportData } from './lib/backupFormat'
 import { uid } from './lib/utils'
 import type { Exercise, MuscleGroup, Session, SetEntry, Unit } from './types'
 
@@ -18,9 +18,10 @@ interface State {
 
   /** When the data was last written to a backup file (ISO timestamp). */
   lastBackupAt?: string
-  /** Number of changes (sessions or exercises added, edited, deleted) since that backup. */
-  pendingBackup: number
-  markBackedUp: () => void
+  /** Fingerprint of what that backup contained; the difference from it is what is not backed up yet. */
+  backupSnapshot?: BackupSnapshot
+  /** Records that a backup holding exactly the data in `snapshot` now exists outside the app. */
+  markBackedUp: (snapshot: BackupSnapshot) => void
 
   /** Home screen UI state. Kept in memory only (not persisted) so it survives navigation. */
   home: { query: string; filter: HomeFilter; scrollY: number }
@@ -52,8 +53,8 @@ export const useStore = create<State>()(
       sessions: [],
 
       lastBackupAt: undefined,
-      pendingBackup: 0,
-      markBackedUp: () => set({ lastBackupAt: new Date().toISOString(), pendingBackup: 0 }),
+      backupSnapshot: undefined,
+      markBackedUp: (snapshot) => set({ lastBackupAt: new Date().toISOString(), backupSnapshot: snapshot }),
 
       home: { query: '', filter: 'All', scrollY: 0 },
       setHome: (patch) => set((s) => ({ home: { ...s.home, ...patch } })),
@@ -62,7 +63,7 @@ export const useStore = create<State>()(
 
       addExercise: (e) => {
         const exercise: Exercise = { ...e, id: uid(), custom: true, image: false }
-        set((s) => ({ exercises: [...s.exercises, exercise], pendingBackup: s.pendingBackup + 1 }))
+        set((s) => ({ exercises: [...s.exercises, exercise] }))
         return exercise
       },
       updateExercise: (id, patch) =>
@@ -70,7 +71,6 @@ export const useStore = create<State>()(
           // Built-in exercises are refreshed from the library on every load; the flag is
           // what makes the user's changes to one survive that (and a backup restore).
           exercises: s.exercises.map((e) => (e.id === id ? { ...e, ...patch, ...(e.custom ? {} : { edited: true }) } : e)),
-          pendingBackup: s.pendingBackup + 1,
         })),
       deleteExercise: (id) =>
         set((s) => ({
@@ -80,7 +80,6 @@ export const useStore = create<State>()(
             ? s.exercises.map((e) => (e.id === id ? { ...e, archived: true } : e))
             : s.exercises.filter((e) => e.id !== id),
           sessions: s.sessions.filter((x) => x.exerciseId !== id),
-          pendingBackup: s.pendingBackup + 1,
         })),
 
       addSession: (exerciseId, sets, date, note) => {
@@ -91,7 +90,7 @@ export const useStore = create<State>()(
           sets: cleanSets(sets),
           note: note?.trim() || undefined,
         }
-        set((s) => ({ sessions: [...s.sessions, session], pendingBackup: s.pendingBackup + 1 }))
+        set((s) => ({ sessions: [...s.sessions, session] }))
         return session
       },
       updateSession: (id, patch) =>
@@ -99,22 +98,19 @@ export const useStore = create<State>()(
           sessions: s.sessions.map((x) =>
             x.id === id ? { ...x, ...patch, sets: patch.sets ? cleanSets(patch.sets) : x.sets } : x,
           ),
-          pendingBackup: s.pendingBackup + 1,
         })),
-      deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id), pendingBackup: s.pendingBackup + 1 })),
+      deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
 
       importData: (data, mode) => {
-        const { unit, exercises, sessions, pendingBackup } = get()
+        const { unit, exercises, sessions } = get()
         const next = applyBackup({ unit, exercises, sessions }, data, mode, PRESET_EXERCISES)
-        // When the device held nothing of its own, it now matches the file exactly, so nothing
-        // is waiting for a backup. Otherwise the combined data exists nowhere else yet.
-        const matchesFile = mode === 'replace' || (sessions.length === 0 && pendingBackup === 0)
-        set({
-          ...next,
-          ...(matchesFile ? { pendingBackup: 0, lastBackupAt: data.exportedAt } : { pendingBackup: pendingBackup + 1 }),
-        })
+        // When the device held nothing of its own, it now matches the file exactly, so that file
+        // is its backup. Otherwise the last backup stays the reference and whatever the file
+        // added counts as not backed up, because the combined data exists nowhere else yet.
+        const matchesFile = mode === 'replace' || countChanges({ exercises, sessions }, undefined) === 0
+        set({ ...next, ...(matchesFile ? { backupSnapshot: snapshotOf(next), lastBackupAt: data.exportedAt } : {}) })
       },
-      resetAll: () => set({ unit: 'kg', exercises: PRESET_EXERCISES, sessions: [], pendingBackup: 0 }),
+      resetAll: () => set({ unit: 'kg', exercises: PRESET_EXERCISES, sessions: [], backupSnapshot: undefined, lastBackupAt: undefined }),
     }),
     {
       name: 'overload.v1',
@@ -123,11 +119,18 @@ export const useStore = create<State>()(
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>
         const exercises = reconcileExercises(p.exercises ?? [], p.sessions ?? [], PRESET_EXERCISES)
-        // Installs from before backups were tracked: every stored session counts as not backed up.
-        const pendingBackup = p.pendingBackup ?? (p.sessions ?? []).length
-        return { ...current, ...p, exercises, pendingBackup }
+        // Installs that backed up before snapshots existed stored a running tally instead. A tally
+        // of zero means the data still equals that backup, so its fingerprint can be taken now.
+        // Otherwise there is nothing reliable to compare with: everything counts as not backed up
+        // until the next backup, which errs on the safe side.
+        const legacy: Partial<State> & { pendingBackup?: number } = { ...p }
+        const backupSnapshot =
+          p.backupSnapshot ??
+          (p.lastBackupAt && legacy.pendingBackup === 0 ? snapshotOf({ exercises, sessions: p.sessions ?? [] }) : undefined)
+        delete legacy.pendingBackup
+        return { ...current, ...legacy, exercises, backupSnapshot }
       },
-      partialize: (s) => ({ unit: s.unit, exercises: s.exercises, sessions: s.sessions, lastBackupAt: s.lastBackupAt, pendingBackup: s.pendingBackup }),
+      partialize: (s) => ({ unit: s.unit, exercises: s.exercises, sessions: s.sessions, lastBackupAt: s.lastBackupAt, backupSnapshot: s.backupSnapshot }),
     },
   ),
 )

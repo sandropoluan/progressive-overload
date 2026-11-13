@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { exportData, useStore } from '../store'
-import { serializeBackup, type BackupCounts } from './backupFormat'
+import { countChanges, serializeBackup, snapshotOf, type BackupCounts } from './backupFormat'
 
 export interface BackupResult {
   outcome: 'shared' | 'downloaded' | 'cancelled'
@@ -22,7 +23,10 @@ export interface BackupResult {
  * Must be called from a tap: both paths need a user gesture.
  */
 export async function backupNow(): Promise<BackupResult> {
-  const { json, counts, problems } = serializeBackup(exportData())
+  const data = exportData()
+  const { json, counts, problems } = serializeBackup(data)
+  // Fingerprint of exactly what went into the file, not of whatever the app holds later.
+  const snapshot = snapshotOf(data)
   const name = `overload-backup-${new Date().toISOString().slice(0, 10)}.json`
   const { markBackedUp } = useStore.getState()
 
@@ -32,7 +36,7 @@ export async function backupNow(): Promise<BackupResult> {
     if (navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: 'Overload backup' })
-        markBackedUp()
+        markBackedUp(snapshot)
         return { outcome: 'shared', counts, problems }
       } catch (e) {
         // Closing the share sheet is not a backup; anything else falls back to a download.
@@ -47,7 +51,7 @@ export async function backupNow(): Promise<BackupResult> {
   a.download = name
   a.click()
   window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
-  markBackedUp()
+  markBackedUp(snapshot)
   return { outcome: 'downloaded', counts, problems }
 }
 
@@ -56,4 +60,15 @@ export const describeBackup = (r: BackupResult): string => {
   const what = `${r.counts.sessions} session${r.counts.sessions === 1 ? '' : 's'}`
   if (r.problems.length > 0) return `Backup saved, but ${r.problems[0]}`
   return r.outcome === 'shared' ? `Backup saved · ${what}` : `Backup downloaded · ${what}`
+}
+
+/**
+ * Sessions and exercises that differ from the last backup (added, edited or deleted).
+ * It is a real comparison, so undoing a change brings the number back down.
+ */
+export function usePendingChanges(): number {
+  const exercises = useStore((s) => s.exercises)
+  const sessions = useStore((s) => s.sessions)
+  const snapshot = useStore((s) => s.backupSnapshot)
+  return useMemo(() => countChanges({ exercises, sessions }, snapshot), [exercises, sessions, snapshot])
 }

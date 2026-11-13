@@ -365,3 +365,65 @@ export const compareBackup = (current: AppData, file: AppData): BackupComparison
     deviceOnlyCustomExercises: [...myCustom].filter((id) => !fileCustom.has(id)).length,
   }
 }
+
+// ---------------------------------------------------------------- what has changed since a backup
+
+/**
+ * A fingerprint of everything a backup file contained: one short hash per session and
+ * per exercise the user created or changed. Comparing the current data with it gives the
+ * real difference from the last backup, so adding a session and deleting it again counts
+ * as no change.
+ */
+export interface BackupSnapshot {
+  /** session id -> content hash */
+  s: Record<string, string>
+  /** exercise id -> content hash, only for custom, edited or deleted (archived) exercises */
+  e: Record<string, string>
+}
+
+/** cyrb53: a small, well-distributed 53-bit string hash. */
+const hash = (str: string): string => {
+  let h1 = 0xdeadbeef
+  let h2 = 0x41c6ce57
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i)
+    h1 = Math.imul(h1 ^ ch, 2654435761)
+    h2 = Math.imul(h2 ^ ch, 1597334677)
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
+}
+
+const sessionHash = (x: Session): string =>
+  hash(JSON.stringify([x.exerciseId, x.date, x.note ?? '', x.sets.map((set) => [set.weight, set.reps])]))
+
+/** Only what the user controls: library-owned fields of built-in exercises may change with app updates. */
+const exerciseHash = (x: Exercise): string =>
+  hash(
+    JSON.stringify([
+      x.name, x.muscle, x.equipment, x.repMin, x.repMax, x.sets,
+      !!x.unilateral, !!x.timed, !!x.archived, !!x.edited, !!x.custom,
+      x.custom ? [x.primary ?? [], x.secondary ?? []] : 0,
+    ]),
+  )
+
+export const snapshotOf = (d: Pick<AppData, 'exercises' | 'sessions'>): BackupSnapshot => ({
+  s: Object.fromEntries(d.sessions.map((x) => [x.id, sessionHash(x)])),
+  e: Object.fromEntries(d.exercises.filter((x) => !untouched(x)).map((x) => [x.id, exerciseHash(x)])),
+})
+
+/**
+ * How many sessions and exercises differ from the last backup: added, edited or deleted,
+ * each counted once. With no snapshot (never backed up) everything counts.
+ */
+export const countChanges = (d: Pick<AppData, 'exercises' | 'sessions'>, last: BackupSnapshot | undefined): number => {
+  const now = snapshotOf(d)
+  const diff = (a: Record<string, string>, b: Record<string, string>): number => {
+    let n = 0
+    for (const id in a) if (b[id] !== a[id]) n += 1 // new or edited
+    for (const id in b) if (!(id in a)) n += 1 // deleted
+    return n
+  }
+  return diff(now.s, last?.s ?? {}) + diff(now.e, last?.e ?? {})
+}
