@@ -4,6 +4,7 @@ import { compareProgress, exerciseImage, fmtWeight, prSessionIds, relativeDay, s
 import { matchScore, searchText } from '../lib/search'
 import { useStore, type HomeFilter } from '../store'
 import { MUSCLE_GROUPS, type Exercise, type Session } from '../types'
+import { BackupBanner } from './BackupBanner'
 import { ExerciseForm } from './ExerciseForm'
 import { HomeOverview } from './HomeOverview'
 import { ArrowDown, ArrowUp, ChevronRight, Dash, Plus, Search, Settings } from './Icons'
@@ -98,6 +99,8 @@ export function Home() {
         </div>
         <button className="icon-btn" aria-label="Settings" onClick={() => navigate({ name: 'settings' })}><Settings /></button>
       </header>
+
+      <BackupBanner />
 
       <div className="stats">
         <StatTile label="Training days" value={String(daysThisWeek)} unit="this week" delta={daysThisWeek - daysLastWeek} deltaUnit="vs last" />

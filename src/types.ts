@@ -43,7 +43,10 @@ export interface Exercise {
   /** Target muscles, as react-body-highlighter slugs. */
   primary?: Muscle[]
   secondary?: Muscle[]
+  /** Hidden from the list. Set when the user deletes a built-in exercise, so it stays gone after library updates. */
   archived?: boolean
+  /** The user changed this built-in exercise in the edit form; those fields are kept across library updates. */
+  edited?: boolean
 }
 
 export interface SetEntry {

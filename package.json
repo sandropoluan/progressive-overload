@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test tests/backup.test.ts",
     "preview": "vite preview",
     "build:exercises": "node scripts/build-exercises.mjs",
     "build:splash": "node scripts/build-splash.mjs"

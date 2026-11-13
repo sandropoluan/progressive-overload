@@ -28,6 +28,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Backup and restore must keep working: a failing test stops the deploy.
+      - run: npm test
       # The base path is derived from the repository name so the app works at
       # https://<user>.github.io/<repo>/ without editing vite.config.ts.
       - run: npm run build
